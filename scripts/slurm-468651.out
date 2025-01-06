@@ -1,0 +1,13 @@
+Warning - 9 input sequences aligned poorly to reference sequences (--min_align option specified a minimum proportion of 0.8 aligning to reference sequences). These input sequences will not be placed and will be excluded from downstream steps.
+
+This is the set of poorly aligned input sequences to be excluded: 91bed4fdf1ea73c6a991f458fc639f25, 44b582605ec7b1d365e3c75fd1d840a6, 19bd9754f909f637eeb2f21661eb79df, b36efa2ff189af8206a40c128898e3f5, ce93ff3b9e0e4acfdee378c307cda961, 78c46695b2f961616eddf069fd153b60, a98bbf59d945110155ea762359266492, bbe678af042d678cd01c09ed18297234, fa22a31c3a1dffa25bdd0ad425ea9fc9
+
+
+
+
+
+2 of 2467 ASVs were above the max NSTI cut-off of 2.0 and were removed from the downstream analyses.
+
+2 of 2467 ASVs were above the max NSTI cut-off of 2.0 and were removed from the downstream analyses.
+
+
