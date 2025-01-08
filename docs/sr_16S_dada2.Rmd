@@ -979,6 +979,7 @@ ggplot(df_counts, aes(x = group, y = num_hits, fill = sample)) +
 
 ```
 
+![](assets/img/depl_seqscreen_scfa_v2.png)
 
 ## Random bash scripts of interest
 
