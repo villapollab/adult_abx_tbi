@@ -3153,38 +3153,36 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 <span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--semibin-model</span> mouse_gut <span class="dt">\</span></span>
 <span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--medaka-model</span> r941_min_sup_g507 <span class="dt">\</span></span>
 <span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> aviary_veh <span class="dt">\</span></span>
-<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> annotate <span class="dt">\</span></span>
-<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">-resume</span></span></code></pre></div>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">-w</span> annotate</span></code></pre></div>
 </div>
 <p>I like aviary as in my experience it produces MAGs that are much more complete when compared to other pipelines like <a href="https://github.com/jtamames/SqueezeMeta">SqueezeMeta</a> but use whatever works for you. P.S. <a href="https://nf-co.re/mag/3.3.0/">nf-core mag</a> is a nice pipeline as well but does not have a nanopore (long-read <strong>only</strong> option).</p>
 <p>Aviary does have an annotation pipeline that I did run, however, to get more accurate results on these annotations I also opted to use my groups software, <a href="https://gitlab.com/treangenlab/seqscreen">seqscreen</a>. BTW to run seqscreen, you must first convert your fastq data to fasta.</p>
 <div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=bigmemq</span></span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=512GB</span></span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
-<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=110</span></span>
-<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
-<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=seqscreen</span></span>
-<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=seqscreen</span></span>
-<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load mamba</span>
-<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate 16s</span>
-<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a><span class="ex">seqkit</span> fq2fa /path/to/veh_depl_final.fastq <span class="at">-o</span> /path/to/veh_depl_final.fasta</span>
-<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate seqscreen</span>
-<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a><span class="ex">seqscreen</span> <span class="dt">\</span></span>
-<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ont</span> <span class="dt">\</span></span>
-<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fasta</span> /path/to/veh_depl_final.fasta <span class="dt">\</span></span>
-<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--databases</span> /path/to/SeqScreenDB_23.3 <span class="dt">\</span></span>
-<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--working</span> veh_depl_seqscreen <span class="dt">\</span></span>
-<span id="cb5-26"><a href="#cb5-26" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 110</span></code></pre></div>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=bigmemq</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=512GB</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=110</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=seqscreen</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=seqscreen</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load mamba</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate 16s</span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a><span class="ex">seqkit</span> fq2fa /path/to/veh_depl_final.fastq <span class="at">-o</span> /path/to/veh_depl_final.fasta</span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate seqscreen</span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a><span class="ex">seqscreen</span> <span class="dt">\</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--ont</span> <span class="dt">\</span></span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--fasta</span> /path/to/veh_depl_final.fasta <span class="dt">\</span></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--databases</span> /path/to/SeqScreenDB_23.3 <span class="dt">\</span></span>
+<span id="cb5-24"><a href="#cb5-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--working</span> veh_depl_seqscreen <span class="dt">\</span></span>
+<span id="cb5-25"><a href="#cb5-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 110</span></code></pre></div>
 </div>
 <p>Now to parse the <strong>seqscreen results</strong> I used an R script as the functional annotation results was a 1.4Gb .txt file. This is a very useful script as it can parse whatever GO terms, patric IDs, or Uniprot IDs you may be looking for and compare between two seqscreen dataframes. Here we used this to compare the number of GO term hits related to acetate, propionate, butyrate, and broad range SCFA between our vehicle and antibiotic groups (5dpi mice).</p>
 <p>To use this R script you’ll have to have processed two groups you want to compare, in this document I only show the processing of one group but just repeat for the other group.</p>
@@ -3198,6 +3196,7 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://csdaw.github.io/ggprism/">ggprism</a></span><span class="op">)</span></span>
 <span><span class="kw"><a href="https://rdrr.io/r/base/library.html">library</a></span><span class="op">(</span><span class="va"><a href="https://r-datatable.com">data.table</a></span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Read in seqscreen outputs, these are huge so use fread for efficiency</span></span>
 <span><span class="va">df_veh</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;/path/to/functional_results.txt&quot;</span>, check.names <span class="op">=</span> <span class="cn">F</span>, header <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span><span class="va">df_abx</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/data.table/man/fread.html">fread</a></span><span class="op">(</span><span class="st">&quot;/path/to/functional_results.txt&quot;</span>, check.names <span class="op">=</span> <span class="cn">F</span>, header <span class="op">=</span> <span class="cn">T</span><span class="op">)</span></span>
 <span></span>
@@ -3223,12 +3222,14 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 <span>  <span class="st">&quot;GO:0019626&quot;</span>   <span class="co"># short-chain fatty acid catabolic process</span></span>
 <span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Pattern for grep search</span></span>
 <span><span class="va">scfa_pattern</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/paste.html">paste</a></span><span class="op">(</span><span class="va">scfa_go_terms</span>, collapse <span class="op">=</span> <span class="st">&quot;|&quot;</span><span class="op">)</span></span>
 <span></span>
 <span><span class="co"># If you only want GO terms containing the GO terms above</span></span>
 <span><span class="va">df_veh_filt</span> <span class="op">&lt;-</span> <span class="va">df_veh</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/grep.html">grepl</a></span><span class="op">(</span><span class="va">scfa_pattern</span>, <span class="va">df_veh</span><span class="op">$</span><span class="va">go</span>, ignore.case <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span>
 <span><span class="va">df_abx_filt</span> <span class="op">&lt;-</span> <span class="va">df_abx</span><span class="op">[</span><span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/grep.html">grepl</a></span><span class="op">(</span><span class="va">scfa_pattern</span>, <span class="va">df_abx</span><span class="op">$</span><span class="va">go</span>, ignore.case <span class="op">=</span> <span class="cn">TRUE</span><span class="op">)</span><span class="op">]</span></span>
 <span></span>
+<span><span class="co"># Separate GO terms in same column</span></span>
 <span><span class="va">df_veh_sep</span> <span class="op">&lt;-</span> <span class="va">df_veh_filt</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/separate_rows.html">separate_rows</a></span><span class="op">(</span><span class="va">go</span>, sep <span class="op">=</span> <span class="st">&quot;;&quot;</span><span class="op">)</span></span>
 <span></span>
@@ -3256,42 +3257,40 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 <span><span class="va">df_veh_sep</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="st">&quot;vehicle&quot;</span></span>
 <span><span class="va">df_abx_sep</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="st">&quot;antibiotics&quot;</span></span>
 <span></span>
+<span><span class="co"># Combine both</span></span>
 <span><span class="va">df_combined</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/pkg/BiocGenerics/man/cbind.html">rbind</a></span><span class="op">(</span><span class="va">df_veh_sep</span>, <span class="va">df_abx_sep</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Rename go column header</span></span>
 <span><span class="va">df_combined</span> <span class="op">&lt;-</span> <span class="va">df_combined</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/rename.html">rename</a></span><span class="op">(</span>go_id <span class="op">=</span> <span class="va">go</span><span class="op">)</span></span>
+<span></span>
 <span><span class="co"># Then do the normal join:</span></span>
 <span><span class="va">df_annotated</span> <span class="op">&lt;-</span> <span class="va">df_combined</span> <span class="op">|&gt;</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html">left_join</a></span><span class="op">(</span><span class="va">scfa_groups</span>, by <span class="op">=</span> <span class="st">&quot;go_id&quot;</span><span class="op">)</span></span>
 <span></span>
+<span><span class="co"># Final counts df</span></span>
 <span><span class="va">df_counts</span> <span class="op">&lt;-</span> <span class="va">df_annotated</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/filter.html">filter</a></span><span class="op">(</span><span class="op">!</span><span class="fu"><a href="https://rdrr.io/r/base/NA.html">is.na</a></span><span class="op">(</span><span class="va">group</span><span class="op">)</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/group_by.html">group_by</a></span><span class="op">(</span><span class="va">sample</span>, <span class="va">group</span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/summarise.html">summarize</a></span><span class="op">(</span>num_hits <span class="op">=</span> <span class="fu"><a href="https://dplyr.tidyverse.org/reference/context.html">n</a></span><span class="op">(</span><span class="op">)</span>, .groups <span class="op">=</span> <span class="st">&quot;drop&quot;</span><span class="op">)</span></span>
 <span></span>
-<span><span class="va">df_counts_wide</span> <span class="op">&lt;-</span> <span class="va">df_counts</span> <span class="op">|&gt;</span></span>
-<span>  <span class="fu"><a href="https://tidyr.tidyverse.org/reference/pivot_wider.html">pivot_wider</a></span><span class="op">(</span></span>
-<span>    names_from <span class="op">=</span> <span class="va">sample</span>,</span>
-<span>    values_from <span class="op">=</span> <span class="va">num_hits</span></span>
-<span>  <span class="op">)</span></span>
-<span></span>
-<span><span class="co"># 1. Fix the order of SCFA groups:</span></span>
+<span><span class="co"># Order of SCFA groups</span></span>
 <span><span class="va">df_counts</span><span class="op">$</span><span class="va">group</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span><span class="op">(</span></span>
 <span>  <span class="va">df_counts</span><span class="op">$</span><span class="va">group</span>,</span>
 <span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;acetate&quot;</span>, <span class="st">&quot;butyrate&quot;</span>, <span class="st">&quot;propionate&quot;</span>, <span class="st">&quot;others&quot;</span><span class="op">)</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 2. Fix the order of samples:</span></span>
+<span><span class="co"># Fix the order of samples</span></span>
 <span><span class="va">df_counts</span><span class="op">$</span><span class="va">sample</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/factor.html">factor</a></span><span class="op">(</span></span>
 <span>  <span class="va">df_counts</span><span class="op">$</span><span class="va">sample</span>,</span>
 <span>  levels <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span><span class="st">&quot;vehicle&quot;</span>, <span class="st">&quot;antibiotics&quot;</span><span class="op">)</span>  <span class="co"># vehicle first, then antibiotics</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 3. Define custom colors for vehicle and antibiotics:</span></span>
+<span><span class="co"># Define custom colors for vehicle and antibiotics</span></span>
 <span><span class="va">custom_colors</span> <span class="op">&lt;-</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html">c</a></span><span class="op">(</span></span>
 <span>  <span class="st">&quot;vehicle&quot;</span>     <span class="op">=</span> <span class="st">&quot;#1f78b4&quot;</span>,</span>
 <span>  <span class="st">&quot;antibiotics&quot;</span> <span class="op">=</span> <span class="st">&quot;#e31a1c&quot;</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># 4. Plot</span></span>
+<span><span class="co"># Plot</span></span>
 <span><span class="fu"><a href="https://ggplot2.tidyverse.org/reference/ggplot.html">ggplot</a></span><span class="op">(</span><span class="va">df_counts</span>, <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/aes.html">aes</a></span><span class="op">(</span>x <span class="op">=</span> <span class="va">group</span>, y <span class="op">=</span> <span class="va">num_hits</span>, fill <span class="op">=</span> <span class="va">sample</span><span class="op">)</span><span class="op">)</span> <span class="op">+</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/geom_bar.html">geom_col</a></span><span class="op">(</span>position <span class="op">=</span> <span class="st">&quot;dodge&quot;</span><span class="op">)</span> <span class="op">+</span>  <span class="co"># side-by-side bars</span></span>
 <span>  <span class="fu"><a href="https://ggplot2.tidyverse.org/reference/labs.html">labs</a></span><span class="op">(</span></span>
@@ -3309,87 +3308,85 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 <p>I also ran a few other programs to analyze this data and it probably won’t make it into the paper but are good resources on how to use them.</p>
 <p>To get a better idea of the taxa present from the raw fastq files I used <a href="https://github.com/treangenlab/lemur">Lemur</a> and got the closest NCBI reference for all species greater than 2% abundant using <a href="https://github.com/treangenlab/magnet">magnet</a>.</p>
 <div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
-<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
-<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=defq</span></span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
-<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
-<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=36</span></span>
-<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=192GB</span></span>
-<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
-<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=lemur</span></span>
-<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=lemur</span></span>
-<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load mamba</span>
-<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate lemur</span>
-<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="ex">lemur</span> <span class="dt">\</span></span>
-<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> /path/to/veh_depl_final.fastq <span class="dt">\</span></span>
-<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /path/to/veh_depl_lemur <span class="dt">\</span></span>
-<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 36 <span class="dt">\</span></span>
-<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> /path/to/lemur_db/rv221bacarc-rv222fungi <span class="dt">\</span></span>
-<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tax-path</span> /path/to/rv221bacarc-rv222fungi/taxonomy.tsv <span class="dt">\</span></span>
-<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mm2-type</span> map-ont <span class="dt">\</span></span>
-<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> species</span>
-<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> /path/to/magnet/magnet.py <span class="dt">\</span></span>
-<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> /path/to/veh_depl_lemur/relative_abundance.tsv <span class="dt">\</span></span>
-<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> /path/to/veh_depl_final.fastq <span class="dt">\</span></span>
-<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> ont <span class="dt">\</span></span>
-<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /path/to/veh_depl_magnet <span class="dt">\</span></span>
-<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> 12 <span class="dt">\</span></span>
-<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-abundance</span> 0.02 <span class="dt">\</span></span>
-<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 36</span></code></pre></div>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=defq</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=36</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=192GB</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=lemur</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=lemur</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="ex">module</span> load mamba</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="ex">mamba</span> activate lemur</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="ex">lemur</span> <span class="dt">\</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> /path/to/veh_depl_final.fastq <span class="dt">\</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /path/to/veh_depl_lemur <span class="dt">\</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">-t</span> 36 <span class="dt">\</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">-d</span> /path/to/lemur_db/rv221bacarc-rv222fungi <span class="dt">\</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a>  <span class="at">--tax-path</span> /path/to/rv221bacarc-rv222fungi/taxonomy.tsv <span class="dt">\</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a>  <span class="at">--mm2-type</span> map-ont <span class="dt">\</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">-r</span> species</span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> /path/to/magnet/magnet.py <span class="dt">\</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a>  <span class="at">-c</span> /path/to/veh_depl_lemur/relative_abundance.tsv <span class="dt">\</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a>  <span class="at">-i</span> /path/to/veh_depl_final.fastq <span class="dt">\</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a>  <span class="at">-m</span> ont <span class="dt">\</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a>  <span class="at">-o</span> /path/to/veh_depl_magnet <span class="dt">\</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a>  <span class="at">-a</span> 12 <span class="dt">\</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a>  <span class="at">--min-abundance</span> 0.02 <span class="dt">\</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 36</span></code></pre></div>
 </div>
 <p>I also ran <a href="https://github.com/treangenlab/rhea">rhea</a> to try to see if there are any differences in the assembly graphs relating to the SNPs of genomes that were found in common between treatment groups.</p>
 <p>To get rhea working, I installed the dependencies and made a virtual env using the code below</p>
 <div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/treangenlab/rhea.git</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/fenderglass/Flye</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Flye</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span></span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/lh3/minigraph</span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> minigraph <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv rhea_env</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> rhea_env/bin/activate</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install numpy pandas seaborn networkx</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> rhea</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> rhea.py <span class="at">--help</span></span></code></pre></div>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/treangenlab/rhea.git</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/fenderglass/Flye</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> Flye</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="fu">make</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="fu">git</span> clone https://github.com/lh3/minigraph</span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> minigraph <span class="kw">&amp;&amp;</span> <span class="fu">make</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> <span class="at">-m</span> venv rhea_env</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> rhea_env/bin/activate</span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install numpy pandas seaborn networkx</span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> rhea</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> rhea.py <span class="at">--help</span></span></code></pre></div>
 </div>
 <p>And ran rhea using the code here</p>
 <div class="layout-chunk" data-layout="l-body">
-<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=bigmemq</span></span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=192GB</span></span>
-<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
-<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
-<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=64</span></span>
-<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
-<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=rhea</span></span>
-<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=rhea</span></span>
-<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> /home/tmhagm8/scratch/rhea_env/bin/activate</span>
-<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> /path/to/rhea/rhea.py <span class="dt">\</span></span>
-<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--type</span> nano-hq <span class="dt">\</span></span>
-<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--flye-exec</span> /path/to/Flye/bin/flye <span class="dt">\</span></span>
-<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minigraph-exec</span> /path/to/minigraph/minigraph <span class="dt">\</span></span>
-<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 64 <span class="dt">\</span></span>
-<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /path/to/rhea_outdir <span class="dt">\</span></span>
-<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  /path/to/veh_depl_final.fastq /path/to/abx_depl_final.fastq</span></code></pre></div>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#! /bin/bash</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --time=04-00:00:00</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --partition=bigmemq</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mem=192GB</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-user=agmarshall@houstonmethodist.org</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --mail-type=</span><span class="re">BEGIN</span><span class="co">,</span><span class="re">END</span><span class="co">,FAIL</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --ntasks-per-node=64</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --nodes=1</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --job-name=rhea</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="co">#SBATCH --comment=rhea</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="bu">source</span> /home/tmhagm8/scratch/rhea_env/bin/activate</span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> /path/to/rhea/rhea.py <span class="dt">\</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a>  <span class="at">--type</span> nano-hq <span class="dt">\</span></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a>  <span class="at">--flye-exec</span> /path/to/Flye/bin/flye <span class="dt">\</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">--minigraph-exec</span> /path/to/minigraph/minigraph <span class="dt">\</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a>  <span class="at">--threads</span> 64 <span class="dt">\</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a>  <span class="at">--output-dir</span> /path/to/rhea_outdir <span class="dt">\</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a>  /path/to/veh_depl_final.fastq <span class="dt">\</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a>  /path/to/abx_depl_final.fastq</span></code></pre></div>
 </div>
 <div class="sourceCode" id="cb9"><pre class="sourceCode r distill-force-highlighting-css"><code class="sourceCode r"></code></pre></div>
 <!--radix_placeholder_article_footer-->

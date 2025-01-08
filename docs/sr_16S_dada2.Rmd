@@ -194,7 +194,6 @@ DIR="$PWD"
 mafft --maxiterate 1000 --genafpair --thread 64 "$DIR/rep-seqs.fasta" > "$DIR/rep-seqs-aln.fasta"
 
 FastTree -nt -gtr "$DIR/rep-seqs-aln.fasta" > "$DIR/rep-seqs.tree"
-
 ```
 
 Match ASV names 
@@ -285,7 +284,6 @@ chao1_filt <- chao1_data |>
   select(Mouse.ID, Injury, Treatment, Timepoint, Group, chao1_unique)
 
 write.csv(chao1_filt, file = "/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/depl_chao1.csv")
-
 ```
 
 ![](assets/img/chao1_final.png)
@@ -402,7 +400,6 @@ write.table(treat_permdf, file ="/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dad
 
 
 one = read.delim("/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/beta_div/1XTBI_wuni_pcoa_permanova.tsv", check.names = F, header = T)
-
 ```
 
 ![](assets/img/beta_div/sham_wuni.png)
@@ -478,7 +475,6 @@ physeq |>
   )
 
 #ggsave("assets/img/inj_n_treat_35d_htmp_genus.png", height = 5, width = 7, units = "in")
-
 ```
 
 ![](assets/img/abx_htmp.png)
@@ -593,7 +589,6 @@ sample_data(physeq) <- sample_data(merged_meta)
 ps_scfa <- subset_samples(physeq, Injury == "TBI_2X" & Timepoint == "5dpi")
 
 #View(sample_data(ps_scfa))
-
 ```
 
 
@@ -602,7 +597,6 @@ __Redundancy analysis__
 To attempt some SCFA and microbial abundance connections **(not included in manuscript)**
 
 ```{r, eval=FALSE, layout="l-body-outset", fig.width=6, fig.height=5}
-
 # First, define your custom color palette
 ps_scfa |>
   ps_mutate(
@@ -655,7 +649,6 @@ ps_scfa |>
   )
 
 #ggsave("scfa_treatment_rda_genus_5dpi_only.png", height = 5, width = 7, units = "in")
-
 ```
 
 ![](assets/img/scfa_treatment_rda_genus_5dpi_only.png)
@@ -663,7 +656,6 @@ ps_scfa |>
 Let's see the correlation heatmap of the SCFA and microbial abundance comparisons **(not included in manuscript)**
 
 ```{r, eval=FALSE}
-
 # for some reason this doesnt like to print, I always just make the plot in a new r script tab and save it there
 
 set.seed(111) # ensures making same random variables every time!
@@ -686,7 +678,6 @@ ps_scfa_abx |>
   )
 
 #ggsave("ps_scfa_depl_abx_spear.png", height = 5, width = 7, units = "in")
-
 ```
 
 ![](assets/img/scfa_depl_veh_spear.png)
@@ -723,7 +714,6 @@ otu_df_species <- otu_df_species[, c("Taxon", setdiff(colnames(otu_df_species), 
 
 # Write to CSV without row names, so the first column is Taxon (Genus Species)
 #write.csv(otu_df_species, "pan_veh_species_counts.csv", quote = FALSE)
-
 ```
 
 
@@ -818,9 +808,7 @@ aviary complete \
   --semibin-model mouse_gut \
   --medaka-model r941_min_sup_g507 \
   -o aviary_veh \
-  -w annotate \
-  -resume
-
+  -w annotate
 ```
 
 I like aviary as in my experience it produces MAGs that are much more complete when compared to other pipelines like [SqueezeMeta](https://github.com/jtamames/SqueezeMeta) but use whatever works for you. P.S. [nf-core mag](https://nf-co.re/mag/3.3.0/) is a nice pipeline as well but does not have a nanopore (long-read __only__ option).
@@ -828,7 +816,6 @@ I like aviary as in my experience it produces MAGs that are much more complete w
 Aviary does have an annotation pipeline that I did run, however, to get more accurate results on these annotations I also opted to use my groups software, [seqscreen](https://gitlab.com/treangenlab/seqscreen). BTW to run seqscreen, you must first convert your fastq data to fasta.
 
 ```{r, engine = 'bash', eval = FALSE}
-
 #! /bin/bash
 
 #SBATCH --time=04-00:00:00
@@ -854,7 +841,6 @@ seqscreen \
   --databases /path/to/SeqScreenDB_23.3 \
   --working veh_depl_seqscreen \
   --threads 110
-
 ```
 
 
@@ -872,6 +858,7 @@ library(ggplot2)
 library(ggprism)
 library(data.table)
 
+# Read in seqscreen outputs, these are huge so use fread for efficiency
 df_veh <- fread("/path/to/functional_results.txt", check.names = F, header = T)
 df_abx <- fread("/path/to/functional_results.txt", check.names = F, header = T)
 
@@ -897,12 +884,14 @@ scfa_go_terms <- c(
   "GO:0019626"   # short-chain fatty acid catabolic process
 )
 
+# Pattern for grep search
 scfa_pattern <- paste(scfa_go_terms, collapse = "|")
 
 # If you only want GO terms containing the GO terms above
 df_veh_filt <- df_veh[grepl(scfa_pattern, df_veh$go, ignore.case = TRUE)]
 df_abx_filt <- df_abx[grepl(scfa_pattern, df_abx$go, ignore.case = TRUE)]
 
+# Separate GO terms in same column
 df_veh_sep <- df_veh_filt |>
   separate_rows(go, sep = ";")
 
@@ -930,42 +919,40 @@ scfa_groups <- data.frame(
 df_veh_sep$sample <- "vehicle"
 df_abx_sep$sample <- "antibiotics"
 
+# Combine both
 df_combined <- rbind(df_veh_sep, df_abx_sep)
 
+# Rename go column header
 df_combined <- df_combined |> rename(go_id = go)
+
 # Then do the normal join:
 df_annotated <- df_combined |> left_join(scfa_groups, by = "go_id")
 
+# Final counts df
 df_counts <- df_annotated |>
   filter(!is.na(group)) |>
   group_by(sample, group) |>
   summarize(num_hits = n(), .groups = "drop")
 
-df_counts_wide <- df_counts |>
-  pivot_wider(
-    names_from = sample,
-    values_from = num_hits
-  )
-
-# 1. Fix the order of SCFA groups:
+# Order of SCFA groups
 df_counts$group <- factor(
   df_counts$group,
   levels = c("acetate", "butyrate", "propionate", "others")
 )
 
-# 2. Fix the order of samples:
+# Fix the order of samples
 df_counts$sample <- factor(
   df_counts$sample,
   levels = c("vehicle", "antibiotics")  # vehicle first, then antibiotics
 )
 
-# 3. Define custom colors for vehicle and antibiotics:
+# Define custom colors for vehicle and antibiotics
 custom_colors <- c(
   "vehicle"     = "#1f78b4",
   "antibiotics" = "#e31a1c"
 )
 
-# 4. Plot
+# Plot
 ggplot(df_counts, aes(x = group, y = num_hits, fill = sample)) +
   geom_col(position = "dodge") +  # side-by-side bars
   labs(
@@ -988,7 +975,6 @@ I also ran a few other programs to analyze this data and it probably won't make 
 To get a better idea of the taxa present from the raw fastq files I used [Lemur](https://github.com/treangenlab/lemur) and got the closest NCBI reference for all species greater than 2% abundant using [magnet](https://github.com/treangenlab/magnet).
 
 ```{r, engine = 'bash', eval = FALSE}
-
 #! /bin/bash
 
 #SBATCH --time=04-00:00:00
@@ -1022,7 +1008,6 @@ python /path/to/magnet/magnet.py \
   -a 12 \
   --min-abundance 0.02 \
   --threads 36
-
 ```
 
 
@@ -1031,7 +1016,6 @@ I also ran [rhea](https://github.com/treangenlab/rhea) to try to see if there ar
 To get rhea working, I installed the dependencies and made a virtual env using the code below
 
 ```{r, engine = 'bash', eval = FALSE}
-
 git clone https://github.com/treangenlab/rhea.git
 
 git clone https://github.com/fenderglass/Flye
@@ -1049,13 +1033,11 @@ pip install numpy pandas seaborn networkx
 cd rhea
 
 python rhea.py --help
-
 ```
 
 And ran rhea using the code here
 
 ```{r, engine = 'bash', eval = FALSE}
-
 #! /bin/bash
 
 #SBATCH --time=04-00:00:00
@@ -1076,6 +1058,6 @@ python /path/to/rhea/rhea.py \
   --minigraph-exec /path/to/minigraph/minigraph \
   --threads 64 \
   --output-dir /path/to/rhea_outdir \
-  /path/to/veh_depl_final.fastq /path/to/abx_depl_final.fastq
-
+  /path/to/veh_depl_final.fastq \
+  /path/to/abx_depl_final.fastq
 ```
