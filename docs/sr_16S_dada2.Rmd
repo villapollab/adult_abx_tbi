@@ -259,10 +259,10 @@ We took the shannon_species value for each covariate and plotted the values in o
 ```{r Shannon, eval=FALSE}
 # Calculate Shannon
 shan_data <- physeq |>
-  ps_calc_diversity(rank = "unique", index = "shannon") %>%
+  ps_calc_diversity(rank = "unique", index = "shannon") |>
   samdat_tbl()
 
-shan_filt = shan_data |>
+shan_filt <- shan_data |>
   select(Mouse.ID, Injury, Treatment, Timepoint, Group, shannon_unique)
 
 write.csv(shan_filt, file = "/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/depl_shannon.csv")
@@ -278,10 +278,10 @@ Same thing this time except using the Chao1 index
 ```{r Chao1, eval=FALSE}
 # Calculate Chao1 richness
 chao1_data <- physeq |>
-  ps_calc_richness(rank = "unique", index = "chao1") %>%
+  ps_calc_richness(rank = "unique", index = "chao1") |>
   samdat_tbl()
 
-chao1_filt = chao1_data |>
+chao1_filt <- chao1_data |>
   select(Mouse.ID, Injury, Treatment, Timepoint, Group, chao1_unique)
 
 write.csv(chao1_filt, file = "/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/depl_chao1.csv")
@@ -349,7 +349,7 @@ Now we have an idea on how to filter our data for beta diversity analyses, we st
 
 timepoint_colors <- c("Baseline" = "#0000FF", "After_Treatment" = "#00F900", "5dpi" = "#FF2600")
 
-ps_t = subset_samples(physeq, Timepoint == "Baseline" | Timepoint == "After_Treatment" | Timepoint == "5dpi")
+ps_t <- subset_samples(physeq, Timepoint == "Baseline" | Timepoint == "After_Treatment" | Timepoint == "5dpi")
 
 ps_veh <- subset_samples(ps_t, Treatment == "VEH")
 ps_sham <- subset_samples(ps_t, Treatment == "ABX" & Injury == "SHAM")
@@ -453,13 +453,13 @@ cols_treatment <- distinct_palette(n = length(unique(samdat_tbl(physeq)$Treatmen
 names(cols_treatment) <- unique(samdat_tbl(physeq)$Treatment)
 
 # Create the heatmap with both Injury and Treatment annotations
-physeq %>%
+physeq |>
   # Sort samples by similarity
-  ps_seriate(rank = "Genus", tax_transform = "compositional", dist = "bray") %>% 
+  ps_seriate(rank = "Genus", tax_transform = "compositional", dist = "bray") |> 
   # Arrange samples by Injury state
-  ps_arrange(Injury) %>% 
+  ps_arrange(Injury) |>
   # Apply CLR transformation
-  tax_transform("clr", rank = "Genus") %>%
+  tax_transform("clr", rank = "Genus") |>
   # Filter taxa by prevalence and abundance
   tax_filter(min_prevalence = 0.5, verbose = FALSE, min_total_abundance = 1000) |>
   # Generate compositional heatmap
@@ -487,52 +487,33 @@ physeq %>%
 
 Differential abundance analysis for the three severity levels we investigated. For this analysis I wrote the outputs to a csv file and visualized them using prism but this is more than possible in R. I recommend using the ANCOMBC2 bioconductor [tutorial](https://www.bioconductor.org/packages/release/bioc/vignettes/ANCOMBC/inst/doc/ANCOMBC2.html) to do this if you so please.
 
+For some reason my ANCOMBC2 does not work on my institute R server so I just run this on my macbook.
+
 ```{r, eval = FALSE}
-# round otu counts, we do this for our other analyses to keep consistent
-round_covid = round(otu_table(ps))
+# round otu counts
+round_ps < round(otu_table(ps))
 
 # Update sample_data in phyloseq object
-ps_4_daa = phyloseq(round_covid, physeq@tax_table, physeq@sam_data)
+good_ps <- phyloseq(round_ps, ps_old@tax_table, ps_old@sam_data)
 
-# If finding differential of treatment --> 2 weeks time point
-ps_m_ba = subset_samples(ps_4_daa, Sex == "M" & Timepoint == "Baseline")
-ps_f_ba = subset_samples(ps_4_daa, Sex == "F" & Timepoint == "Baseline")
-
-# If finding differential of treatment --> 7 weeks time point
-ps_m_sham_35d = subset_samples(ps_4_daa, Sex == "M" & Injury == "Sham" & Timepoint == "35d")
-ps_f_sham_35d = subset_samples(ps_4_daa, Sex == "F" & Injury == "Sham" & Timepoint == "35d")
-ps_m_tbi_35d = subset_samples(ps_4_daa, Sex == "M" & Injury == "CCI" & Timepoint == "35d")
-ps_f_tbi_35d = subset_samples(ps_4_daa, Sex == "F" & Injury == "CCI" & Timepoint == "35d")
-
-# If finding differential of time point 
-ps_m_sham_veh = subset_samples(ps_4_daa, Sex == "M" & Injury == "Sham" & Treatment == "Vehicle")
-ps_f_sham_veh = subset_samples(ps_4_daa, Sex == "F" & Injury == "Sham" & Treatment == "Vehicle")
-ps_m_sham_pan = subset_samples(ps_4_daa, Sex == "M" & Injury == "Sham" & Treatment == "PAN")
-ps_f_sham_pan = subset_samples(ps_4_daa, Sex == "F" & Injury == "Sham" & Treatment == "PAN")
-
-ps_m_tbi_veh = subset_samples(ps_4_daa, Sex == "M" & Injury == "CCI" & Treatment == "Vehicle")
-ps_f_tbi_veh = subset_samples(ps_4_daa, Sex == "F" & Injury == "CCI" & Treatment == "Vehicle")
-ps_m_tbi_pan = subset_samples(ps_4_daa, Sex == "M" & Injury == "CCI" & Treatment == "PAN")
-ps_f_tbi_pan = subset_samples(ps_4_daa, Sex == "F" & Injury == "CCI" & Treatment == "PAN")
-
-# Quantify sex difference at baseline
-ps_veh_ba = subset_samples(ps_4_daa, Timepoint == "Baseline" & Treatment == "Vehicle")
-ps_pan_ba = subset_samples(ps_4_daa, Timepoint == "Baseline" & Treatment == "PAN")
-
-# And at 7 weeks
-ps_sham_veh_35d = subset_samples(ps_4_daa, Injury == "Sham" & Timepoint == "35d" & Treatment == "Vehicle")
-ps_sham_pan_35d = subset_samples(ps_4_daa, Injury == "Sham" & Timepoint == "35d" & Treatment == "PAN")
-ps_tbi_veh_35d = subset_samples(ps_4_daa, Injury == "CCI" & Timepoint == "35d" & Treatment == "Vehicle")
-ps_tbi_pan_35d = subset_samples(ps_4_daa, Injury == "CCI" & Timepoint == "35d" & Treatment == "PAN")
+good_ps_filt <- good_ps |>
+  subset_samples(Injury == "TBI_2X" & Treatment == "VEH")
 
 # Read in phyloseq for ancombc
-tse = mia::convertFromPhyloseq(ps_m_tbi_pan)
+tse <- mia::makeTreeSummarizedExperimentFromPhyloseq(good_ps_filt)
+
+# Subset to lean, overweight, and obese subjects
+tse <- tse[, tse$Timepoint %in% c("Baseline", "After_Treatment", "5dpi")]
+
+# To manually change the reference level, for instance, setting `obese`
+# as the reference level, use:
+tse$Timepoint <- factor(tse$Timepoint, levels = c("Baseline", "After_Treatment", "5dpi"))
 
 # set seed for ancombc
 set.seed(123)
 
 # run ancombc
-output3 = ancombc2(data = tse, assay_name = "counts", tax_level = "Genus",
+output3 <- ancombc2(data = tse, assay_name = "counts", tax_level = "Genus",
                     fix_formula = "Timepoint", rand_formula = NULL,
                     p_adj_method = "holm", pseudo_sens = TRUE,
                     prv_cut = 0.1, lib_cut = 10000, s0_perc = 0.05,
@@ -556,12 +537,16 @@ output3 = ancombc2(data = tse, assay_name = "counts", tax_level = "Genus",
                                          node = list(2, 2, 1),
                                          solver = "ECOS",
                                          B = 100))
+# How many structural zeroes?
+tab_zero <- output3$zero_ind
+tab_zero |>
+  datatable(caption = "The detection of structural zeros")
 
 #Print output to dataframe
 res_prim3 <- output3$res
 
 #Save ancombc stats for each subset
-#write.csv(res_prim3, file = "ps_tbi_pan_male_timecomp_ancom.csv", row.names = FALSE)
+#write.csv(res_prim3, file = "25_01_03_depl_2XTBI_VEH_timepoint_ancom.csv", row.names = FALSE)
 ```
 
 Here is an example of a plot using this data that was made in GraphPad Prism
@@ -590,7 +575,7 @@ sample_meta <- data.frame(sample_data(physeq)) |>
 colnames(sample_meta)[1] <- "Sample"
 
 # Merge by MouseID
-merged_meta <- sample_meta %>%
+merged_meta <- sample_meta |>
   full_join(scfa_data, by = "Sample") |>
   select(Sample, `Mouse.ID.x`, Injury, `Treatment.x`, Timepoint, Group, 
          Acetate.x, Propionate.x, Isobutyrate.x, Butyrate.x, X2.methyl.butyrate, 
@@ -605,7 +590,7 @@ sample_data(physeq) <- sample_data(merged_meta)
 #############################
 # Now we can subset to the mice we want to use in the RDA (All TBI Mice with scfa data)
 
-ps_scfa = subset_samples(physeq, Injury == "TBI_2X" & Timepoint == "5dpi")
+ps_scfa <- subset_samples(physeq, Injury == "TBI_2X" & Timepoint == "5dpi")
 
 #View(sample_data(ps_scfa))
 
@@ -619,7 +604,7 @@ To attempt some SCFA and microbial abundance connections **(not included in manu
 ```{r, eval=FALSE, layout="l-body-outset", fig.width=6, fig.height=5}
 
 # First, define your custom color palette
-ps_scfa %>%
+ps_scfa |>
   ps_mutate(
     Acetate = Acetate.x,
     Propionate = Propionate.x,
@@ -686,9 +671,9 @@ set.seed(111) # ensures making same random variables every time!
 ps_scfa_veh <- subset_samples(ps_scfa, Treatment.x == "VEH")
 ps_scfa_abx <- subset_samples(ps_scfa, Treatment.x == "ABX")
 
-ps_scfa_abx %>%
-  tax_agg("Genus") %>%
-  tax_sort(by = prev, at = "Genus") %>%
+ps_scfa_abx |>
+  tax_agg("Genus") |>
+  tax_sort(by = prev, at = "Genus") |>
   cor_heatmap(
     seriation_method = "Identity",
     seriation_method_col = "OLO_ward",
@@ -706,21 +691,21 @@ ps_scfa_abx %>%
 
 ![](assets/img/scfa_depl_veh_spear.png)
 
-## Export OTU table for Firmicutues / Bacteroides ratio
+## Export OTU table for F / B ratio
 
 To export raw counts for each sample and each ASV we can run this code and create an OTU-like csv file. We can transform these counts prior to exporting or do it outside of R, I believe we did this in prism or excel. This specific script will export a csv with the ASV identifier column, taxonomic classification, then the counts for each ASV in each sample; specifically for the Vehicle group samples.
 
 ```{r, eval = FALSE}
-ps_veh = subset_samples(physeq, Treatment == "Vehicle")
+ps_veh <- subset_samples(physeq, Treatment == "Vehicle")
 
 # Aggregate at species level
-ps_species = tax_glom(ps_veh, taxrank = "Species")
+ps_species <- tax_glom(ps_veh, taxrank = "Species")
 
 # Extract the species-level OTU table as a data frame
-otu_df_species = as.data.frame(otu_table(ps_species))
+otu_df_species <- as.data.frame(otu_table(ps_species))
 
 # Extract the taxonomy table as a data frame
-tax_df = as.data.frame(tax_table(ps_species))
+tax_df <- as.data.frame(tax_table(ps_species))
 
 # Check that "Genus" and "Species" columns exist
 if(!"Genus" %in% colnames(tax_df) || !"Species" %in% colnames(tax_df)) {
@@ -728,13 +713,13 @@ if(!"Genus" %in% colnames(tax_df) || !"Species" %in% colnames(tax_df)) {
 }
 
 # Create a new combined taxon name column, e.g., "Genus species"
-tax_df$Taxon = paste(tax_df$Genus, tax_df$Species, sep = " ")
+tax_df$Taxon <- paste(tax_df$Genus, tax_df$Species, sep = " ")
 
 # Add this new Taxon column to the OTU counts data frame
-otu_df_species$Taxon = tax_df$Taxon
+otu_df_species$Taxon <- tax_df$Taxon
 
 # Move the 'Taxon' column to the front
-otu_df_species = otu_df_species[, c("Taxon", setdiff(colnames(otu_df_species), "Taxon"))]
+otu_df_species <- otu_df_species[, c("Taxon", setdiff(colnames(otu_df_species), "Taxon"))]
 
 # Write to CSV without row names, so the first column is Taxon (Genus Species)
 #write.csv(otu_df_species, "pan_veh_species_counts.csv", quote = FALSE)
@@ -918,10 +903,10 @@ scfa_pattern <- paste(scfa_go_terms, collapse = "|")
 df_veh_filt <- df_veh[grepl(scfa_pattern, df_veh$go, ignore.case = TRUE)]
 df_abx_filt <- df_abx[grepl(scfa_pattern, df_abx$go, ignore.case = TRUE)]
 
-df_veh_sep <- df_veh_filt %>%
+df_veh_sep <- df_veh_filt |>
   separate_rows(go, sep = ";")
 
-df_abx_sep <- df_abx_filt %>%
+df_abx_sep <- df_abx_filt |>
   separate_rows(go, sep = ";")
 
 # Vector of your SCFA GO terms
@@ -947,16 +932,16 @@ df_abx_sep$sample <- "antibiotics"
 
 df_combined <- rbind(df_veh_sep, df_abx_sep)
 
-df_combined <- df_combined %>% rename(go_id = go)
+df_combined <- df_combined |> rename(go_id = go)
 # Then do the normal join:
-df_annotated <- df_combined %>% left_join(scfa_groups, by = "go_id")
+df_annotated <- df_combined |> left_join(scfa_groups, by = "go_id")
 
-df_counts <- df_annotated %>%
-  filter(!is.na(group)) %>%        # Optional: keep only SCFA-related rows
-  group_by(sample, group) %>%
+df_counts <- df_annotated |>
+  filter(!is.na(group)) |>
+  group_by(sample, group) |>
   summarize(num_hits = n(), .groups = "drop")
 
-df_counts_wide <- df_counts %>%
+df_counts_wide <- df_counts |>
   pivot_wider(
     names_from = sample,
     values_from = num_hits
