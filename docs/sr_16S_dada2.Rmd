@@ -13,6 +13,7 @@ output:
   distill::distill_article:
     toc: true
     theme: theme.css
+    highlight: pygments
 ---
 ## Introduction
 
@@ -48,7 +49,7 @@ library(progressr); handlers(global=TRUE)
 library(furrr); plan(multisession, workers = 72)
 ```
 
-## Process fastq data
+## Process fastq data with DADA2
 
 More work similar to this can be found the [DADA2 tutorial](https://benjjneb.github.io/dada2/tutorial.html).
 
@@ -78,7 +79,7 @@ out <- filterAndTrim(fnFs, filtFs, fnRs, filtRs, maxEE=2,
 head(out)
 ```
 
-## Running DADA2
+Plot errors and run DADA2
 
 ```{r, eval=FALSE}
 # Learn the error model from the filtered data.
@@ -94,7 +95,7 @@ ddF <- dada(filtFs, errF, pool=FALSE, multi=TRUE)
 ddR <- dada(filtRs, errR, pool=FALSE, multi=TRUE)
 ```
 
-## Merging reads, make sequence table, and remove chimeras
+Merging reads, make sequence table, and remove chimeras
 
 ```{r, eval=FALSE}
 # Merge the denoised forward and reverse reads together.
@@ -111,7 +112,7 @@ st <- removeBimeraDenovo(sta, multi=TRUE, verbose=TRUE)
 sum(st)/sum(sta)
 ```
 
-## Sanity check
+Sanity check
 
 ```{r, eval=FALSE}
 # Code derived from the dada2 tutorial: https://benjjneb.github.io/dada2/tutorial.html
@@ -122,7 +123,7 @@ rownames(track) <- basename(fnFs)
 head(track)
 ```
 
-## Assign taxonomy
+Assign taxonomy
 
 ```{r, eval=FALSE}
 # Assign taxonomy down to the genus level to these 16S ASVs.
@@ -131,7 +132,7 @@ tax <- assignTaxonomy(st, "/home/tmhagm8/scratch/dada2/gg2_2024_09_toSpecies_tra
 unname(head(tax)) # unname strips the long ASV rownames to make the printed output more readable
 ```
 
-## Prep phyloseq inputs
+Prepare phyloseq inputs
 
 ```{r, eval=FALSE}
 # Metadata file
@@ -142,7 +143,7 @@ samdf <- read.delim("/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult
 rownames(st) <- gsub("_R1_001\\.fastq\\.gz$", "", rownames(st))
 ```
 
-## Make ASV fasta for phylogenetics
+Make ASV fasta for phylogenetics
 
 ```{r, eval=FALSE}
 # lets make our rep-seqs.fasta file to process the ASV's with mafft and fasttree
@@ -172,7 +173,7 @@ close(fileConn)
 To create the phylogenetic tree of our ASV sequences I turned to using my SLURM HPC and ran the following script with the rep-seqs.fasta file we created above.
 I created a conda environment that had MAFFT and FastTree installed to run this.
 
-```
+```{r, engine = 'bash', eval = FALSE}
 #! /bin/bash
 
 #SBATCH --time=04-00:00:00
@@ -196,7 +197,7 @@ FastTree -nt -gtr "$DIR/rep-seqs-aln.fasta" > "$DIR/rep-seqs.tree"
 
 ```
 
-## Match ASV names 
+Match ASV names 
 
 ```{r, eval=FALSE}
 #Now lets make the ASV names match for the phyloseq merging with tree
@@ -215,7 +216,7 @@ head(colnames(st))
 rownames(tax) <- hash_ids
 ```
 
-## Make phyloseq object
+Make phyloseq object
 
 ```{r, eval=FALSE}
 # Use phyloseq to plot a bray-curtis NMDS odrination of our samples, colored by treatment.
@@ -238,8 +239,7 @@ physeq <- physeq |>
   tax_fix()
 ```
 
-
-## Using our phyloseq object to analyze and visualize the data
+## Diversity analyses and vizualization
 
 Up to this point our work is solid, from here on out I want us to write some code chunks we can use for all 16S analyses. I implemented [MicroViz](https://github.com/david-barnett/microViz) for clr relative abundance and ordination plotting, and diversity estimations with the use of [ANCOMBC2](https://github.com/FrederickHuangLin/ANCOMBC) for differential abundance approximations.
 
@@ -251,9 +251,6 @@ How to pick a threshold? --> Depends on what analysis method you are filtering f
 * Differential abundance testing = stringent filtering, prevalence >5%, >10%?
 
 If you're unsure, check out the [MicroViz documentation](https://david-barnett.github.io/microViz/) or read some Amy Willis' [statdivlab](https://github.com/statdivlab) papers!
-
-## Alpha Diversity
-The following code chunks will generate Shannon diverisity and Chao1 richness plots, based on COVID severity levels (or any other covariate of your choice). The code will also assess significant differences between covariate values using the Kruskal-Wallis test followed by Dunn’s post-hoc test.
 
 __Shannon Diversity Calculation__
 
@@ -293,7 +290,7 @@ write.csv(chao1_filt, file = "/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_
 
 ![](assets/img/chao1_final.png)
 
-## Intro to beta diversity
+__Intro to beta diversity__
 
 This is useful for seeing where we want to filter our data for beta diversity (only light filtering).
 
@@ -410,7 +407,7 @@ one = read.delim("/condo/neurobiome/tmhagm8/abx_depl/abx_depl_dada2_gg2/adult_ab
 
 ![](assets/img/beta_div/sham_wuni.png)
 
-## Relative abundance plots (ol' faithful)
+## Relative abundance plots
 
 Super useful to make your own palette and assign to certain taxa, this helps your viewers understand trends in this data. I altered this figure in coreldraw to widen it out and turn it vertically (with the facet labels).
 
@@ -440,7 +437,7 @@ physeq |>
 
 ![](assets/img/relabund_genus_4_vign.png)
 
-## Comparing the top microbes between the treatment groups
+__Heatmaps of count data__
 
 Heatmap of abundance with treatment groups, this is a heavily filtered subset but is needed for this type of figure. I prettied this up in coreldraw just by removing the legend and changing the order of the samples. Was not used in our manuscript but still nice to have
 
@@ -570,7 +567,7 @@ res_prim3 <- output3$res
 Here is an example of a plot using this data that was made in GraphPad Prism
 ![](assets/img/TBI_2X_DAA.png)
 
-## Now let's look at the connection between SCFAs and microbes
+## SCFA and microbiome connection
 
 Add the SCFA normalized and transformed concentrations (performed in [Metaboanalyst](https://www.metaboanalyst.ca/)) for each mouse to the metadata, only looking at 5dpi group. The ".x" is just an artifact of the quick and dirty join, the values are the same.
 
@@ -615,7 +612,7 @@ ps_scfa = subset_samples(physeq, Injury == "TBI_2X" & Timepoint == "5dpi")
 ```
 
 
-## Redundancy analysis (RDA)
+__Redundancy analysis__
 
 To attempt some SCFA and microbial abundance connections **(not included in manuscript)**
 
@@ -744,45 +741,355 @@ otu_df_species = otu_df_species[, c("Taxon", setdiff(colnames(otu_df_species), "
 
 ```
 
-## Running picrust2 on this data
 
-Since we already have the ASV fasta all we need to make is the biom type table.
+## Processing nanopore only metagenomic data
 
-```{r}
+To further understand what the microbes within our sample we used nanopore sequencing with the SQK-RAD004 kit and R9.4.1 flow cells. The samples chosen were the fecal DNA from a cage of mice in the vehicle group and a cage of mice in the antibiotics group.
 
-# Extract abundance matrix
-otu_mat <- as(otu_table(physeq), "matrix") |>
-  t()
+We processed the pod5 data by basecalling with [dorado v0.7.0](https://github.com/nanoporetech/dorado) and the super accuracy model.
 
-# Write tab-delimited file
-write.table(
-  otu_mat,
-  file      = "abx_depl_abunds.tsv",
-  sep       = "\t",
-  quote     = FALSE,
-  col.names = NA
-)
+```{r, engine = 'bash', eval = FALSE}
+#!/bin/bash -l
 
+#SBATCH --job-name=dorado
+#SBATCH --nodes=1
+#SBATCH --partition=gpuq
+#SBATCH --gres=gpu:1
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --time=3-00:00:00
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
+
+module load dorado/0.7.0
+
+mamba activate dorado
+
+echo "Start Time: `date`";
+
+dorado basecaller sup@3.6 /path/to/*.pod5 > /path/to/veh_depl.bam
+
+echo $(date);
 ```
 
-And the bash script to run picrust2
+Once basecalling is complete, we processed the .bam output using [samtools v1.21](https://www.htslib.org/), [NanoPlot v1.43.0](https://github.com/wdecoster/NanoPlot), [hostile v1.1.0](https://github.com/bede/hostile), and [chopper v0.9.0](https://github.com/wdecoster/chopper).
 
-```
+I made a mamba env called metassem containing all the programs above to run these tools.
+
+Shoutout to Bede Constantinides of hostile for including the mm39 reference to easily remove these reads from our fastqs.
+
+```{r, engine = 'bash', eval = FALSE}
 #! /bin/bash
 
 #SBATCH --time=04-00:00:00
 #SBATCH --partition=defq
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --ntasks-per-node=36
+#SBATCH --mem=128GB
+#SBATCH --nodes=1
+#SBATCH --job-name=metassem
+#SBATCH --comment=metassem
+
+module load mamba
+
+mamba activate metassem
+
+samtools fastq veh_depl.bam > veh_depl.fastq
+
+NanoPlot -t 36 --fastq veh_depl.fastq --maxlength 15000 --plots dot -o veh_depl_nanplot1
+
+hostile clean --fastq1 veh_depl.fastq --threads 36 --index mouse-mm39 --aligner minimap2 --out-dir cleaned_veh_depl
+
+chopper -q 6 -l 250 -t 36 -i veh_depl.clean.fastq > veh_depl_final.fastq
+
+NanoPlot -t 36 --fastq veh_depl_final.fastq --maxlength 15000 --plots dot -o veh_depl_nanplot2
+```
+
+Now once I'm satisfied with the lengths and qualities of our reads I used the [aviary v.0.10.0](https://github.com/rhysnewell/aviary) pipeline to process the data the rest of the way (assembly, binning, mapping, classification, etc.)
+
+```{r, engine = 'bash', eval = FALSE}
+#! /bin/bash
+
+#SBATCH --time=04-00:00:00
+#SBATCH --partition=defq
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --ntasks-per-node=64
 #SBATCH --mem=192GB
-#SBATCH --mail-user=email@email.org
+#SBATCH --nodes=1
+#SBATCH --job-name=veh_mags
+#SBATCH --comment=veh_mags
+
+module load mamba
+mamba activate aviary
+
+aviary complete \
+  --longreads /path/to/veh_depl_final.fastq \
+  --skip-binners metabat \
+  --min-mean-q 6 \
+  --long_read_type ont_hq \
+  -t 32 \
+  -n 64 \
+  --tmp /path/to/aviary_veh_tmp \
+  --semibin-model mouse_gut \
+  --medaka-model r941_min_sup_g507 \
+  -o aviary_veh \
+  -w annotate \
+  -resume
+
+```
+
+I like aviary as in my experience it produces MAGs that are much more complete when compared to other pipelines like [SqueezeMeta](https://github.com/jtamames/SqueezeMeta) but use whatever works for you. P.S. [nf-core mag](https://nf-co.re/mag/3.3.0/) is a nice pipeline as well but does not have a nanopore (long-read __only__ option).
+
+Aviary does have an annotation pipeline that I did run, however, to get more accurate results on these annotations I also opted to use my groups software, [seqscreen](https://gitlab.com/treangenlab/seqscreen). BTW to run seqscreen, you must first convert your fastq data to fasta.
+
+```{r, engine = 'bash', eval = FALSE}
+
+#! /bin/bash
+
+#SBATCH --time=04-00:00:00
+#SBATCH --partition=bigmemq
+#SBATCH --mem=512GB
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --ntasks-per-node=110
+#SBATCH --nodes=1
+#SBATCH --job-name=seqscreen
+#SBATCH --comment=seqscreen
+
+module load mamba
+mamba activate 16s
+
+seqkit fq2fa /path/to/veh_depl_final.fastq -o /path/to/veh_depl_final.fasta
+
+mamba activate seqscreen
+
+seqscreen \
+  --ont \
+  --fasta /path/to/veh_depl_final.fasta \
+  --databases /path/to/SeqScreenDB_23.3 \
+  --working veh_depl_seqscreen \
+  --threads 110
+
+```
+
+
+Now to parse the __seqscreen results__ I used an R script as the functional annotation results was a 1.4Gb .txt file. This is a very useful script as it can parse whatever GO terms, patric IDs, or Uniprot IDs you may be looking for and compare between two seqscreen dataframes. Here we used this to compare the number of GO term hits related to acetate, propionate, butyrate, and broad range SCFA between our vehicle and antibiotic groups (5dpi mice).
+
+To use this R script you'll have to have processed two groups you want to compare, in this document I only show the processing of one group but just repeat for the other group.
+
+
+```{r, eval=FALSE, message=FALSE}
+# this was a separate script hence why the dependecies here as well
+
+library(dplyr)
+library(tidyr)
+library(ggplot2)
+library(ggprism)
+library(data.table)
+
+df_veh <- fread("/path/to/functional_results.txt", check.names = F, header = T)
+df_abx <- fread("/path/to/functional_results.txt", check.names = F, header = T)
+
+scfa_go_terms <- c(
+  # Acetate-related
+  "GO:0006083",  # acetate metabolic process
+  "GO:0006846",  # acetate transport
+  "GO:0019427",  # acetyl-CoA biosynthetic process from acetate
+  
+  # Propionate-related
+  "GO:0019679",  # propionate metabolic process
+  "GO:0019629",  # propionate catabolic process, 2-methylcitrate cycle
+  "GO:0019543",  # propionate catabolic process
+  
+  # Butyrate-related
+  "GO:0019605",  # butyrate metabolic process
+  "GO:0047761",  # butyrate kinase activity
+  "GO:0046359",  # butyrate catabolic process
+  
+  # Others
+  "GO:0046459",  # short-chain fatty acid metabolic process
+  "GO:0051790",  # short-chain fatty acid biosynthetic process
+  "GO:0019626"   # short-chain fatty acid catabolic process
+)
+
+scfa_pattern <- paste(scfa_go_terms, collapse = "|")
+
+# If you only want GO terms containing the GO terms above
+df_veh_filt <- df_veh[grepl(scfa_pattern, df_veh$go, ignore.case = TRUE)]
+df_abx_filt <- df_abx[grepl(scfa_pattern, df_abx$go, ignore.case = TRUE)]
+
+df_veh_sep <- df_veh_filt %>%
+  separate_rows(go, sep = ";")
+
+df_abx_sep <- df_abx_filt %>%
+  separate_rows(go, sep = ";")
+
+# Vector of your SCFA GO terms
+acetate <- c("GO:0006083", "GO:0006846", "GO:0019427")
+propionate <- c("GO:0019679", "GO:0019629", "GO:0019543")
+butyrate <- c("GO:0019605", "GO:0047761", "GO:0046359")
+others <- c("GO:0046459", "GO:0051790", "GO:0019626")
+
+# Combine into a single data frame for easy joining
+scfa_groups <- data.frame(
+  go_id = c(acetate, propionate, butyrate, others),
+  group = c(
+    rep("acetate", length(acetate)),
+    rep("propionate", length(propionate)),
+    rep("butyrate", length(butyrate)),
+    rep("others", length(others))
+  )
+)
+
+# Example only if they are separate:
+df_veh_sep$sample <- "vehicle"
+df_abx_sep$sample <- "antibiotics"
+
+df_combined <- rbind(df_veh_sep, df_abx_sep)
+
+df_combined <- df_combined %>% rename(go_id = go)
+# Then do the normal join:
+df_annotated <- df_combined %>% left_join(scfa_groups, by = "go_id")
+
+df_counts <- df_annotated %>%
+  filter(!is.na(group)) %>%        # Optional: keep only SCFA-related rows
+  group_by(sample, group) %>%
+  summarize(num_hits = n(), .groups = "drop")
+
+df_counts_wide <- df_counts %>%
+  pivot_wider(
+    names_from = sample,
+    values_from = num_hits
+  )
+
+# 1. Fix the order of SCFA groups:
+df_counts$group <- factor(
+  df_counts$group,
+  levels = c("acetate", "butyrate", "propionate", "others")
+)
+
+# 2. Fix the order of samples:
+df_counts$sample <- factor(
+  df_counts$sample,
+  levels = c("vehicle", "antibiotics")  # vehicle first, then antibiotics
+)
+
+# 3. Define custom colors for vehicle and antibiotics:
+custom_colors <- c(
+  "vehicle"     = "#1f78b4",
+  "antibiotics" = "#e31a1c"
+)
+
+# 4. Plot
+ggplot(df_counts, aes(x = group, y = num_hits, fill = sample)) +
+  geom_col(position = "dodge") +  # side-by-side bars
+  labs(
+    x = "SCFA Group",
+    y = "Number of Hits",
+    fill = "Sample",
+    title = "Comparison of SCFA-related GO Term Hits"
+  ) +
+  theme_prism() +
+  scale_fill_manual(values = custom_colors)
+
+```
+
+
+## Random bash scripts of interest
+
+I also ran a few other programs to analyze this data and it probably won't make it into the paper but are good resources on how to use them.
+
+To get a better idea of the taxa present from the raw fastq files I used [Lemur](https://github.com/treangenlab/lemur) and got the closest NCBI reference for all species greater than 2% abundant using [magnet](https://github.com/treangenlab/magnet).
+
+```{r, engine = 'bash', eval = FALSE}
+
+#! /bin/bash
+
+#SBATCH --time=04-00:00:00
+#SBATCH --partition=defq
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
+#SBATCH --mail-type=BEGIN,END,FAIL
+#SBATCH --ntasks-per-node=36
+#SBATCH --mem=192GB
+#SBATCH --nodes=1
+#SBATCH --job-name=lemur
+#SBATCH --comment=lemur
+
+module load mamba
+
+mamba activate lemur
+
+lemur \
+  -i /path/to/veh_depl_final.fastq \
+  -o /path/to/veh_depl_lemur \
+  -t 36 \
+  -d /path/to/lemur_db/rv221bacarc-rv222fungi \
+  --tax-path /path/to/rv221bacarc-rv222fungi/taxonomy.tsv \
+  --mm2-type map-ont \
+  -r species
+
+python /path/to/magnet/magnet.py \
+  -c /path/to/veh_depl_lemur/relative_abundance.tsv \
+  -i /path/to/veh_depl_final.fastq \
+  -m ont \
+  -o /path/to/veh_depl_magnet \
+  -a 12 \
+  --min-abundance 0.02 \
+  --threads 36
+
+```
+
+
+I also ran [rhea](https://github.com/treangenlab/rhea) to try to see if there are any differences in the assembly graphs relating to the SNPs of genomes that were found in common between treatment groups.
+
+To get rhea working, I installed the dependencies and made a virtual env using the code below
+
+```{r, engine = 'bash', eval = FALSE}
+
+git clone https://github.com/treangenlab/rhea.git
+
+git clone https://github.com/fenderglass/Flye
+cd Flye
+make
+
+git clone https://github.com/lh3/minigraph
+cd minigraph && make
+
+python -m venv rhea_env
+source rhea_env/bin/activate
+
+pip install numpy pandas seaborn networkx
+
+cd rhea
+
+python rhea.py --help
+
+```
+
+And ran rhea using the code here
+
+```{r, engine = 'bash', eval = FALSE}
+
+#! /bin/bash
+
+#SBATCH --time=04-00:00:00
+#SBATCH --partition=bigmemq
+#SBATCH --mem=192GB
+#SBATCH --mail-user=agmarshall@houstonmethodist.org
 #SBATCH --mail-type=BEGIN,END,FAIL
 #SBATCH --ntasks-per-node=64
 #SBATCH --nodes=1
-#SBATCH --job-name=picrust2
-#SBATCH --comment=picrust2
+#SBATCH --job-name=rhea
+#SBATCH --comment=rhea
 
-module load mamba
-mamba activate picrust2
+source /home/tmhagm8/scratch/rhea_env/bin/activate
 
-picrust2_pipeline.py -s /home/tmhagm8/scratch/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/picrust2.53/rep-seqs.fasta -i /home/tmhagm8/scratch/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/picrust2.53/abx_depl_abunds.tsv -o /home/tmhagm8/scratch/abx_depl/abx_depl_dada2_gg2/adult_abx_tbi/data/picrust2.53/out --processes 10 --stratified --per_sequence_contrib
+python /path/to/rhea/rhea.py \
+  --type nano-hq \
+  --flye-exec /path/to/Flye/bin/flye \
+  --minigraph-exec /path/to/minigraph/minigraph \
+  --threads 64 \
+  --output-dir /path/to/rhea_outdir \
+  /path/to/veh_depl_final.fastq /path/to/abx_depl_final.fastq
 
 ```
