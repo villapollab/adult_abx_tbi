@@ -719,7 +719,7 @@ otu_df_species <- otu_df_species[, c("Taxon", setdiff(colnames(otu_df_species), 
 
 ## Processing nanopore only metagenomic data
 
-To further understand what the microbes within our sample we used nanopore sequencing with the SQK-RAD004 kit and R9.4.1 flow cells. The samples chosen were the fecal DNA from a cage of mice in the vehicle group and a cage of mice in the antibiotics group.
+To further understand the microbes within our sample, we used nanopore sequencing with the SQK-RAD004 kit and R9.4.1 flow cells (long-read shotgun sequencing). The samples chosen were the fecal DNA from a cage of mice in the vehicle group and a cage of mice in the antibiotics group.
 
 We processed the pod5 data by basecalling with [dorado v0.7.0](https://github.com/nanoporetech/dorado) and the super accuracy model.
 
@@ -848,19 +848,18 @@ Now to parse the __seqscreen results__ I used an R script as the functional anno
 
 To use this R script you'll have to have processed two groups you want to compare, in this document I only show the processing of one group but just repeat for the other group.
 
-
 ```{r, eval=FALSE, message=FALSE}
-# this was a separate script hence why the dependecies here as well
-
 library(dplyr)
 library(tidyr)
 library(ggplot2)
 library(ggprism)
 library(data.table)
 
-# Read in seqscreen outputs, these are huge so use fread for efficiency
-df_veh <- fread("/path/to/functional_results.txt", check.names = F, header = T)
-df_abx <- fread("/path/to/functional_results.txt", check.names = F, header = T)
+#----------------------------
+# 1. Read data
+#----------------------------
+df_veh <- fread("/condo/neurobiome/tmhagm8/abx_depl/meta_workdir/both_sqm/veh_depl_seqscreen/functional_annotation/functional_assignments/functional_results.txt", check.names = FALSE, header = TRUE)
+df_abx <- fread("/condo/neurobiome/tmhagm8/abx_depl/meta_workdir/both_sqm/abx_depl_seqscreen/functional_annotation/functional_assignments/functional_results.txt", check.names = FALSE, header = TRUE)
 
 scfa_go_terms <- c(
   # Acetate-related
@@ -887,24 +886,23 @@ scfa_go_terms <- c(
 # Pattern for grep search
 scfa_pattern <- paste(scfa_go_terms, collapse = "|")
 
-# If you only want GO terms containing the GO terms above
+# Filter for SCFA-related GO terms
 df_veh_filt <- df_veh[grepl(scfa_pattern, df_veh$go, ignore.case = TRUE)]
 df_abx_filt <- df_abx[grepl(scfa_pattern, df_abx$go, ignore.case = TRUE)]
 
-# Separate GO terms in same column
+# Separate rows for multiple GO terms in a single row
 df_veh_sep <- df_veh_filt |>
   separate_rows(go, sep = ";")
 
 df_abx_sep <- df_abx_filt |>
   separate_rows(go, sep = ";")
 
-# Vector of your SCFA GO terms
+# Define SCFA groups
 acetate <- c("GO:0006083", "GO:0006846", "GO:0019427")
 propionate <- c("GO:0019679", "GO:0019629", "GO:0019543")
 butyrate <- c("GO:0019605", "GO:0047761", "GO:0046359")
 others <- c("GO:0046459", "GO:0051790", "GO:0019626")
 
-# Combine into a single data frame for easy joining
 scfa_groups <- data.frame(
   go_id = c(acetate, propionate, butyrate, others),
   group = c(
@@ -915,34 +913,59 @@ scfa_groups <- data.frame(
   )
 )
 
-# Example only if they are separate:
+# Tag samples
 df_veh_sep$sample <- "vehicle"
 df_abx_sep$sample <- "antibiotics"
 
-# Combine both
+# Combine
 df_combined <- rbind(df_veh_sep, df_abx_sep)
 
-# Rename go column header
-df_combined <- df_combined |> rename(go_id = go)
+# Rename go column
+df_combined <- rename(df_combined, go_id = go)
 
-# Then do the normal join:
+# Left join with the group definitions
 df_annotated <- df_combined |> left_join(scfa_groups, by = "go_id")
 
-# Final counts df
+#----------------------------
+# 2. Count hits by group
+#----------------------------
 df_counts <- df_annotated |>
   filter(!is.na(group)) |>
   group_by(sample, group) |>
   summarize(num_hits = n(), .groups = "drop")
 
-# Order of SCFA groups
+# Define factor order
 df_counts$group <- factor(
   df_counts$group,
   levels = c("acetate", "butyrate", "propionate", "others")
 )
 
-# Fix the order of samples
 df_counts$sample <- factor(
   df_counts$sample,
+  levels = c("vehicle", "antibiotics")
+)
+
+#----------------------------
+# 3. Normalization
+#----------------------------
+# Add the read counts calulcated from coverm_abundances.log here
+read_depths <- data.frame(
+  sample     = c("vehicle", "antibiotics"),
+  total_reads = c(2768561, 4024478)
+)
+
+# Join read-depth info to your df_counts
+df_counts_norm <- df_counts |>
+  left_join(read_depths, by = "sample") |>
+  # Create normalized counts, for example "hits per million reads":
+  mutate(num_hits_norm = (num_hits / total_reads) * 1e6)
+
+#----------------------------
+# 4. Plot normalized counts
+#----------------------------
+# Fix the order of samples
+df_counts_norm$sample <- factor(
+  df_counts_norm$sample,
   levels = c("vehicle", "antibiotics")  # vehicle first, then antibiotics
 )
 
@@ -953,21 +976,22 @@ custom_colors <- c(
 )
 
 # Plot
-ggplot(df_counts, aes(x = group, y = num_hits, fill = sample)) +
+ggplot(df_counts_norm, aes(x = group, y = num_hits_norm, fill = sample)) +
   geom_col(position = "dodge") +  # side-by-side bars
   labs(
     x = "SCFA Group",
-    y = "Number of Hits",
+    y = "Number of Hits Per Million Reads",
     fill = "Sample",
     title = "Comparison of SCFA-related GO Term Hits"
   ) +
   theme_prism() +
   scale_fill_manual(values = custom_colors)
 
+#ggsave("seqscreen_scfa_goterm_norm_counts.png", height = 5, width = 7, units = "in")
+
 ```
 
-![](assets/img/depl_seqscreen_scfa_v2.png)
-
+![](assets/img/depl_seqscreen_scfa_v3.png)
 ## Random bash scripts of interest
 
 I also ran a few other programs to analyze this data and it probably won't make it into the paper but are good resources on how to use them.
@@ -1010,6 +1034,88 @@ python /path/to/magnet/magnet.py \
   --threads 36
 ```
 
+Now let's plot the lemur abundance data for each metagneomic group using this R script. This plots the taxa that are 2% or more abundant in each sample and moves all the rest ot the "Other" taxa.
+
+```{r, eval=FALSE, message=FALSE}
+library(dplyr)
+library(ggplot2)
+library(ggprism)
+
+# Read VEH
+veh_lem_all <- read.delim("/condo/neurobiome/tmhagm8/abx_depl/meta_workdir/both_sqm/veh_depl_lemur/relative_abundance.tsv",
+  check.names = FALSE, header = TRUE) |>
+  select(species, F)
+
+# Read ABX
+abx_lem_all <- read.delim("/condo/neurobiome/tmhagm8/abx_depl/meta_workdir/both_sqm/abx_depl_lemur/relative_abundance.tsv",
+  check.names = FALSE, header = TRUE) |>
+  select(species, F)
+
+# Label each data set by sample
+veh_lem_all$sample <- "VEH"
+abx_lem_all$sample <- "ABX"
+
+# Combine datasets
+df_all <- bind_rows(veh_lem_all, abx_lem_all)
+
+# Collapse taxa below 2% into "Other" for each sample
+df_collapsed <- df_all %>%
+  group_by(sample) %>%
+  mutate(species = if_else(F < 0.02, "Other", species)) %>%
+  group_by(sample, species) %>%
+  summarise(F = sum(F), .groups = "drop")
+
+# Calculate total abundance across samples for species
+df_totals <- df_collapsed %>%
+  filter(species != "Other") %>%
+  group_by(species) %>%
+  summarise(total_abundance = sum(F), .groups = "drop") %>%
+  arrange(total_abundance)
+
+# Now we have a species_order vector sorted by ascending total abundance
+species_order <- df_totals$species
+
+# Make "Other" the *first* factor level
+df_collapsed$species <- factor(
+  df_collapsed$species,
+  levels = c("Other", species_order)
+)
+
+# VEH group first
+df_collapsed$sample <- factor(
+  df_collapsed$sample,
+  levels = c("VEH", "ABX")  # vehicle first, then antibiotics
+)
+
+# Plot 
+plot_stacked <- ggplot(df_collapsed, aes(x = sample, y = F, fill = species)) +
+  geom_col(position = position_stack(reverse = FALSE)) +
+  labs(
+    x = "Sample",
+    y = "Relative Abundance",
+    fill = "Species",
+    title = "VEH & ABX Groups at Species Level"
+  ) +
+  # Use ggprism theme & color scale
+  theme_prism(base_size = 14) +
+  scale_fill_prism(palette = "colors") +
+  # Force y-axis to go 0 -> 1 and label as percentages
+  scale_y_continuous(
+    limits = c(0, 1),
+    labels = scales::percent_format(accuracy = 1)
+  ) +
+  theme(
+    legend.position = "right"
+    # optionally remove legend title
+    #, legend.title = element_blank()
+  )
+
+print(plot_stacked)
+
+#ggsave("mgx_lemur_relabunds.pdf", plot = plot_stacked, height = 5, width = 7)
+```
+
+![](assets/img/mgx_lemur_relabunds.png)
 
 I also ran [rhea](https://github.com/treangenlab/rhea) to try to see if there are any differences in the assembly graphs relating to the SNPs of genomes that were found in common between treatment groups.
 
@@ -1061,3 +1167,6 @@ python /path/to/rhea/rhea.py \
   /path/to/veh_depl_final.fastq \
   /path/to/abx_depl_final.fastq
 ```
+
+Let's take a peek at the assembly graph for the ABX group, this was done with [Bandage](https://github.com/rrwick/Bandage). We see a circular genome yayyy!
+![](assets/img/abx_graph.png)
